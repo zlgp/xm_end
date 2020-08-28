@@ -1,6 +1,8 @@
 # xm_end
 请先执行 npm i 下载第三方包
 
+数据库还是本地的,稍后会更新
+
 启动项目:
 开发环境:npm run dev
 生产环境;npm run prd
