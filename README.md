@@ -3,7 +3,7 @@
 
 启动项目:
 开发环境:npm run dev
-生产环境;npm run build
+生产环境;npm run prd
 
 技术栈:node.js+mysql+redis+pm2(进程守护)
 
