@@ -5,6 +5,8 @@ const router = express.Router()
 // 引入封装好的mysql文件
 const mysql = require('./mysql')
 
+
+
 // 引入封装好的redis文具
 const redis = require('./redis')
 // 处理时间的
@@ -43,7 +45,6 @@ router.post("/banner", (req, res) => {
         })
     })
 })
-
 // 重磅推荐
 router.post("/recommend", (req, res) => {
     redis.get("recommend").then(results => {
@@ -78,7 +79,8 @@ router.post("/recommend", (req, res) => {
     })
 })
 let recommend = []
-let catogory = []
+let boy_catogory = [[], [], [], []]
+let girl_catogory = [[], [], [], []]
 let girl_recommend = []
 // 频道
 router.post("/get/channel", (req, res) => {
@@ -94,25 +96,47 @@ router.post("/get/channel", (req, res) => {
             mysql.select(`SELECT dp_book.id,dp_book.cover_link,dp_book.book_name,dp_author.author_name FROM dp_book INNER JOIN dp_author WHERE dp_book.author_id=dp_author.id AND  dp_book.girl=0  LIMIT 6`).then(results => {
                 //  再查出男生的分类
                 recommend = results
-                return mysql.select(`SELECT dp_book.id,dp_book.book_name,dp_author.author_name,dp_cate.cate_name FROM dp_book INNER JOIN dp_author JOIN dp_cate WHERE dp_book.author_id=dp_author.id AND dp_book.cate_id=dp_cate.id AND dp_book.girl=0 LIMIT 16`)
+                return mysql.select(`SELECT dp_book.id,dp_book.book_name,dp_author.author_name,dp_cate.cate_name FROM dp_book INNER JOIN dp_author JOIN dp_cate WHERE dp_book.author_id=dp_author.id AND dp_book.cate_id=dp_cate.id AND dp_cate.id>88 AND dp_book.girl=0 LIMIT 16`)
             }).then(results => {
-                catogory = results
+                results.forEach(element => {
+                    if (boy_catogory[0].length == 0 || boy_catogory[0][0].cate_name == element.cate_name) {
+                        boy_catogory[0].push(element)
+                    } else if (boy_catogory[1].length == 0 || boy_catogory[1][0].cate_name == element.cate_name) {
+                        boy_catogory[1].push(element)
+                    } else if (boy_catogory[2].length == 0 || boy_catogory[2][0].cate_name == element.cate_name) {
+                        boy_catogory[2].push(element)
+                    } else {
+                        boy_catogory[3].push(element)
+                    }
+                });
+
                 // 开始读女生的
                 return mysql.select(`SELECT dp_book.id,dp_book.cover_link,dp_book.book_name,dp_author.author_name FROM dp_book INNER JOIN dp_author WHERE dp_book.author_id=dp_author.id AND  dp_book.girl=1  LIMIT 6`)
             }).then(results => {
                 girl_recommend = results
                 return mysql.select(`SELECT dp_book.id,dp_book.book_name,dp_author.author_name,dp_cate.cate_name FROM dp_book INNER JOIN dp_author JOIN dp_cate WHERE dp_book.author_id=dp_author.id AND dp_book.cate_id=dp_cate.id AND dp_book.girl=1 LIMIT 16`)
             }).then(results => {
+                results.forEach(element => {
+                    if (girl_catogory[0].length == 0 || girl_catogory[0][0].cate_name == element.cate_name) {
+                        girl_catogory[0].push(element)
+                    } else if (girl_catogory[1].length == 0 || girl_catogory[1][0].cate_name == element.cate_name) {
+                        girl_catogory[1].push(element)
+                    } else if (girl_catogory[2].length == 0 || girl_catogory[2][0].cate_name == element.cate_name) {
+                        girl_catogory[2].push(element)
+                    } else {
+                        girl_catogory[3].push(element)
+                    }
+                });
                 let wholeData = {
                     boy: {
                         name: "男生",
                         recommend: recommend,
-                        catogory: catogory
+                        catogory: boy_catogory
                     },
                     girl: {
                         name: "女生",
                         recommend: girl_recommend,
-                        catogory: results
+                        catogory: girl_catogory
                     }
                 }
                 redis.set("channel", JSON.stringify(wholeData))
@@ -123,28 +147,30 @@ router.post("/get/channel", (req, res) => {
                         boy: {
                             name: "男生",
                             recommend: recommend,
-                            catogory: catogory
+                            catogory: boy_catogory
                         },
                         girl: {
                             name: "女生",
                             recommend: girl_recommend,
-                            catogory: results
+                            catogory: girl_catogory
                         }
                     }
                 })
             })
                 // 返回错误的信息
                 .catch(error => {
+                    console.log(error);
+
                     res.send({
                         code: 1,
                         msg: "读取失败",
                     })
                 })
         }
-
-    }).catch(error => {
-        console.error(error)
     })
+        .catch(error => {
+            console.error(error)
+        })
 })
 // 最新上线
 router.post("/new", (req, res) => {
@@ -216,6 +242,8 @@ router.post("/get/category", (req, res) => {
 })
 // 分类内容
 router.post("/search/condition", (req, res) => {
+    console.log(req.body);
+
     let current_page = 1
     if (req.body.page) {
         current_page = parseInt(req.body.page);
@@ -228,47 +256,27 @@ router.post("/search/condition", (req, res) => {
     let count = ""
     let total_page = ""
     if (req.body.girl == -1 && req.body.is_end == -1 && req.body.year == 0) {
-        redis.get("noCondition").then(results => {
-            console.log(results, "noCondition");
-            if (results != null) {
-                res.send({
-                    msg: "读取成功",
-                    code: 0,
-                    data: JSON.parse(results)
-                })
-            } else {
-                mysql.select(`SELECT COUNT(*)  as count FROM dp_book`).then(results => {
-                    count = results[0].count
-                    return mysql.select(`SELECT dp_book.id,dp_book.book_name,dp_book.cover_link,dp_book.description,dp_cate.cate_name,dp_author.author_name FROM dp_book JOIN dp_cate INNER JOIN dp_author ON dp_book.author_id=dp_author.id AND dp_book.cate_id=dp_cate.id  limit ${start},${limit}`)
-                }).then(results => {
+        mysql.select(`SELECT COUNT(*)  as count FROM dp_book`).then(results => {
+            count = results[0].count
+            return mysql.select(`SELECT dp_book.id,dp_book.book_name,dp_book.cover_link,dp_book.description,dp_cate.cate_name,dp_author.author_name FROM dp_book JOIN dp_cate INNER JOIN dp_author ON dp_book.author_id=dp_author.id AND dp_book.cate_id=dp_cate.id  limit ${start},${limit}`)
+        }).then(results => {
 
-                    // 总页数
-                    total_page = Math.ceil(count / limit)
-                    let conditionData = {
-                        results,
-                        count,
-                        total_page
-                    }
-                    console.log(conditionData, 'mysql');
-
-                    redis.set("noCondition", JSON.stringify(conditionData))
-                    res.send({
-                        code: 0,
-                        msg: "ok",
-                        data: {
-                            results,
-                            count,
-                            total_page
-                        }
-                    })
-                }).catch(error => {
-                    console.error(error)
-                    res.send({
-                        msg: "微服务故障",
-                        code: 1,
-                    })
-                })
+            // 总页数
+            total_page = Math.ceil(count / limit)
+            let conditionData = {
+                results,
+                count,
+                total_page
             }
+            res.send({
+                code: 0,
+                msg: "ok",
+                data: {
+                    results,
+                    count,
+                    total_page
+                }
+            })
         })
 
     }
@@ -477,8 +485,35 @@ router.post('/book', (req, res) => {
     })
 })
 
+// 获取搜索的信息 模糊查询
+router.post('/get/associate', (req, res) => {
+    let sql = ""
+    if (req.body.title == "") {
+        sql = `SELECT book_name FROM dp_book LIMIT 10`
+    } else {
+        sql = `SELECT book_name FROM dp_book  WHERE dp_book.book_name LIKE '%${req.body.title}%' LIMIT 10`
+    }
+    mysql.select(sql).then(results => {
+        let titles = []
+        results.forEach(element => {
+            titles.push(element.book_name)
+        });
+        res.send({
+            code: 0,
+            msg: "获取信息成功",
+            data: {
+                titles: titles
+            }
+        })
+    }).catch(error => {
+        console.error(error)
+        res.send({
+            msg: "微服务故障",
+            code: 1,
+        })
+    })
 
-
+})
 
 
 module.exports = router

@@ -2,6 +2,8 @@ const mysql = require('mysql')
 
 // 引入环境配置文件
 const { MYSQL_COFN } = require("./confign/confign")
+console.log(MYSQL_COFN);
+
 
 var connection = mysql.createConnection(MYSQL_COFN);
 

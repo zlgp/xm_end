@@ -7,9 +7,12 @@ const path = require('path')
 // 引入路由模块
 const router = require('./router')
 
+
+
 // 引入中间件
 const bodyParser = require('body-parser')
 app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
 // 配置跨域
 var cors = require('cors')
 app.use(cors())
