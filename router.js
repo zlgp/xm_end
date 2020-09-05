@@ -346,51 +346,40 @@ router.post("/search/condition", (req, res) => {
 // 获取跳转过来详情页的书本详情
 let detail
 router.post("/book/detail", (req, res) => {
-    redis.get("detail").then(results => {
-        if (results != null) {
-            res.send({
-                msg: "读取成功",
-                code: 0,
-                data: JSON.parse(results)
-            })
-        } else {
-            // 先查出基本信息,再查出章节信息
-            mysql.select(`SELECT dp_book.id,dp_book.book_name,dp_book.cover_link,dp_book.description,dp_cate.cate_name,dp_author.author_name FROM dp_book JOIN dp_cate INNER JOIN dp_author ON dp_book.author_id=dp_author.id AND dp_book.cate_id=dp_cate.id WHERE dp_book.id='${req.body.id}' `).then(results => {
-                detail = results[0]
-                return mysql.select(`SELECT dp_chapter.book_id,dp_chapter.chapter_id,dp_chapter.chapter_title,dp_chapter.create_time FROM dp_chapter WHERE dp_chapter.book_id='${req.body.id}'`)
-            }).then(zeroth => {
-                let wholeResults = {
-                    detail,
-                    zeroth
-                }
-                redis.set("detail", JSON.stringify(wholeResults))
-                res.send({
-                    msg: "读取成功",
-                    code: 0,
-                    data: {
-                        detail,
-                        zeroth
-                    }
-                })
-            }).catch(error => {
-                console.error(error)
-                res.send({
-                    msg: "微服务故障",
-                    code: 1,
-                })
-            })
+    // 先查出基本信息,再查出章节信息
+    mysql.select(`SELECT dp_book.id,dp_book.is_end,dp_book.book_name,dp_book.cover_link,dp_book.description,dp_cate.cate_name,dp_author.author_name FROM dp_book JOIN dp_cate INNER JOIN dp_author ON dp_book.author_id=dp_author.id AND dp_book.cate_id=dp_cate.id WHERE dp_book.id='${req.body.id}' `).then(results => {
+        detail = results[0]
+        return mysql.select(`SELECT dp_chapter.book_id,dp_chapter.chapter_id,dp_chapter.chapter_title,dp_chapter.create_time FROM dp_chapter WHERE dp_chapter.book_id='${req.body.id}' ORDER BY dp_chapter.chapter_id DESC LIMIT 3`)
+    }).then(zeroth => {
+        let wholeResults = {
+            detail,
+            zeroth
         }
+        redis.set("detail", JSON.stringify(wholeResults))
+        res.send({
+            msg: "读取成功",
+            code: 0,
+            data: {
+                detail,
+                zeroth
+            }
+        })
     }).catch(error => {
         console.error(error)
         res.send({
             msg: "微服务故障",
             code: 1,
         })
+
+
     })
 })
 // 阅读.获取所有章节
 let px = ""
+let chapter_list = []
 router.post("/book/catelog", (req, res) => {
+    console.log(req.body);
+
     if (req.body.ascending == "true") {
         // 升序
         px = "ASC"
@@ -398,93 +387,59 @@ router.post("/book/catelog", (req, res) => {
         //降序
         px = "DESC"
     }
-    redis.get("catelog").then(results => {
-        if (results != null && px == "DESC") {
-            res.send({
-                msg: "读取成功",
-                code: 0,
-                data: JSON.parse(results)
-            })
-        } else {
-            redis.get("Acatelog").then(results => {
-                if (results != null && px == "ASC") {
-                    res.send({
-                        msg: "读取成功",
-                        code: 0,
-                        data: JSON.parse(results)
-                    })
-                } else {
-                    mysql.select(`SELECT dp_chapter.id,dp_chapter.chapter_id,dp_chapter.chapter_title FROM dp_chapter WHERE dp_chapter.book_id='${req.body.id}' ORDER BY dp_chapter.chapter_id ${px.replace("", '')}`).then(results => {
-                        if (px == "DESC") {
-                            redis.set("catelog", JSON.stringify(results))
-                        } else {
-                            redis.set("Acatelog", JSON.stringify(results))
-                        }
-                        res.send({
-                            code: 0,
-                            msg: "获取信息成功",
-                            data: {
-                                results
-                            }
-                        })
-                    }).catch(error => {
-                        console.error(error)
-                        res.send({
-                            code: 1,
-                            msg: "微服务故障"
-                        })
-                    })
-                }
-            })
-
-        }
-
-    }).catch(error => {
-        console.error(error)
+    mysql.select(`SELECT dp_chapter.id,dp_chapter.chapter_id,dp_chapter.chapter_title FROM dp_chapter WHERE dp_chapter.book_id='${req.body.id}' ORDER BY dp_chapter.chapter_id ${px.replace("", '')}`).then(results => {
+        chapter_list = results
+        // 查出书名和作者
+        return mysql.select(`SELECT dp_book.book_name,dp_author.author_name FROM dp_book INNER JOIN dp_author ON dp_book.id='${req.body.id}' AND dp_book.author_id=dp_author.id  `)
+    }).then(results => {
+        console.log(results);
+        let author = results[0].author_name
+        let name = results[0].book_name
         res.send({
-            msg: "微服务故障",
-            code: 1,
+            code: 0,
+            msg: "获取信息成功",
+            data: {
+                author,
+                name,
+                chapter_list
+            }
         })
     })
+
+        .catch(error => {
+            console.error(error)
+            res.send({
+                code: 1,
+                msg: "微服务故障"
+            })
+        })
+
 })
 // 获取跳转过来的阅读详情
 router.post('/book', (req, res) => {
-    redis.get("book").then(results => {
-        console.log(results, 'book');
-        if (results != null) {
-            res.send({
-                msg: "读取成功",
-                code: 0,
-                data: JSON.parse(results)
-            })
-        } else {
-            mysql.select(`SELECT dp_chapter.id,dp_chapter.book_id,dp_chapter.chapter_title,dp_chapter.chapter_id,dp_chapter.chapter_content,dp_book.book_name FROM dp_chapter INNER JOIN dp_book WHERE dp_book.id=dp_chapter.book_id AND dp_chapter.book_id='${req.body.book_id}' AND dp_chapter.chapter_id='${req.body.chapter_id}'`).then(results => {
-                console.log(results[0], 'mysql');
 
-                redis.set("book", JSON.stringify(results[0]))
-                res.send({
-                    code: 0,
-                    msg: "获取信息成功",
-                    data: results[0]
-                })
-            }).catch(error => {
-                console.error(error)
-                res.send({
-                    msg: "微服务故障",
-                    code: 1,
-                })
-            })
-        }
 
+
+    mysql.select(`SELECT dp_chapter.id,dp_chapter.book_id,dp_chapter.chapter_title,dp_chapter.chapter_id,dp_chapter.chapter_content,dp_book.book_name FROM dp_chapter INNER JOIN dp_book WHERE dp_book.id=dp_chapter.book_id AND dp_chapter.book_id='${req.body.book_id}' AND dp_chapter.chapter_id='${req.body.chapter_id}'`).then(results => {
+        console.log(results[0], 'mysql');
+
+        redis.set("book", JSON.stringify(results[0]))
+        res.send({
+            code: 0,
+            msg: "获取信息成功",
+            data: results[0]
+        })
     }).catch(error => {
         console.error(error)
         res.send({
             msg: "微服务故障",
             code: 1,
         })
+
+
+
     })
 })
-
 // 获取搜索的信息 模糊查询
 router.post('/get/associate', (req, res) => {
     let sql = ""
@@ -512,6 +467,53 @@ router.post('/get/associate', (req, res) => {
             code: 1,
         })
     })
+
+})
+
+// 获取搜索的信息
+router.post('/search', (req, res) => {
+    let current_page = 1
+    if (req.body.page) {
+        current_page = parseInt(req.body.page);
+    }
+    //条数
+    let limit = req.body.limit
+    // 从第几条开始
+    start = (current_page - 1) * limit
+    // 总条数
+    let count = ""
+    let total_page = ""
+    let sql = ""
+    let csql = ""
+    if (req.body.title == "") {
+        csql = `SELECT COUNT(*)  as count FROM dp_book`
+        sql = `SELECT dp_book.id,dp_book.book_name,dp_book.cover_link,dp_book.description,dp_cate.cate_name,dp_author.author_name FROM dp_book JOIN dp_cate INNER JOIN dp_author ON dp_book.author_id=dp_author.id AND dp_book.cate_id=dp_cate.id  LIMIT ${start},${limit}`
+    } else {
+        csql = `SELECT COUNT(*)  as count FROM dp_book WHERE dp_book.book_name LIKE '%${req.body.title}%'`
+        sql = `SELECT dp_book.id,dp_book.book_name,dp_book.cover_link,dp_book.description,dp_cate.cate_name,dp_author.author_name FROM dp_book JOIN dp_cate INNER JOIN dp_author ON dp_book.author_id=dp_author.id AND dp_book.cate_id=dp_cate.id AND dp_book.book_name LIKE '%${req.body.title}%' LIMIT ${start},${limit}`
+    }
+    mysql.select(csql).then(results => {
+        count = results[0].count
+        return mysql.select(sql)
+    }).then(results => {
+        total_page = Math.ceil(count / limit)
+        res.send({
+            code: 0,
+            msg: "获取信息成功",
+            data: {
+                results,
+                count,
+                total_page
+            }
+        })
+    })
+        .catch(error => {
+            console.error(error)
+            res.send({
+                msg: "微服务故障",
+                code: 1,
+            })
+        })
 
 })
 
