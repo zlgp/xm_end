@@ -5,14 +5,13 @@ const router = express.Router()
 // 引入封装好的mysql文件
 const mysql = require('./mysql')
 
-
-
 // 引入封装好的redis文具
 const redis = require('./redis')
 // 处理时间的
+
 const moment = require('moment')
 // 轮播图
-router.post("/banner", (req, res) => {
+router.post("/banner", (req, res, next) => {
     // 第一次进来先从mysql读,第二次从redis缓存中读
     redis.get("banner").then(results => {
         if (results != null) {
@@ -31,22 +30,16 @@ router.post("/banner", (req, res) => {
                 })
             }).catch(error => {
                 console.error(error)
-                res.send({
-                    msg: "微服务故障",
-                    code: 1,
-                })
+                next(error)
             })
         }
     }).catch(error => {
         console.error(error)
-        res.send({
-            msg: "微服务故障",
-            code: 0,
-        })
+        next(error)
     })
 })
 // 重磅推荐
-router.post("/recommend", (req, res) => {
+router.post("/recommend", (req, res, next) => {
     redis.get("recommend").then(results => {
         if (results != null) {
             res.send({
@@ -64,18 +57,12 @@ router.post("/recommend", (req, res) => {
                 })
             }).catch(error => {
                 console.error(error)
-                res.send({
-                    msg: "微服务故障",
-                    code: 1,
-                })
+                next(error)
             })
         }
     }).catch(error => {
         console.error(error)
-        res.send({
-            msg: "微服务故障",
-            code: 0,
-        })
+        next(error)
     })
 })
 let recommend = []
@@ -83,7 +70,7 @@ let boy_catogory = [[], [], [], []]
 let girl_catogory = [[], [], [], []]
 let girl_recommend = []
 // 频道
-router.post("/get/channel", (req, res) => {
+router.post("/get/channel", (req, res, next) => {
     redis.get("channel").then(results => {
         if (results != null) {
             res.send({
@@ -160,11 +147,7 @@ router.post("/get/channel", (req, res) => {
                 // 返回错误的信息
                 .catch(error => {
                     console.log(error);
-
-                    res.send({
-                        code: 1,
-                        msg: "读取失败",
-                    })
+                    next(error)
                 })
         }
     })
@@ -173,7 +156,7 @@ router.post("/get/channel", (req, res) => {
         })
 })
 // 最新上线
-router.post("/new", (req, res) => {
+router.post("/new", (req, res, next) => {
     // 第一次进来先从mysql读,第二次从redis缓存中读
     redis.get("new").then(results => {
         if (results != null) {
@@ -192,22 +175,16 @@ router.post("/new", (req, res) => {
                 })
             }).catch(error => {
                 console.error(error)
-                res.send({
-                    msg: "微服务故障",
-                    code: 1,
-                })
+                next(error)
             })
         }
     }).catch(error => {
         console.error(error)
-        res.send({
-            msg: "微服务故障",
-            code: 1,
-        })
+        next(error)
     })
 })
 // 查出分类
-router.post("/get/category", (req, res) => {
+router.post("/get/category", (req, res, next) => {
     // 第一次进来先从mysql读,第二次从redis缓存中读
     redis.get("category").then(results => {
         if (results != null) {
@@ -226,22 +203,16 @@ router.post("/get/category", (req, res) => {
                 })
             }).catch(error => {
                 console.error(error)
-                res.send({
-                    msg: "微服务故障",
-                    code: 1,
-                })
+                next(error)
             })
         }
     }).catch(error => {
         console.error(error)
-        res.send({
-            msg: "微服务故障",
-            code: 1,
-        })
+        next(error)
     })
 })
 // 分类内容
-router.post("/search/condition", (req, res) => {
+router.post("/search/condition", (req, res, next) => {
     console.log(req.body);
 
     let current_page = 1
@@ -334,10 +305,7 @@ router.post("/search/condition", (req, res) => {
             })
         }).catch(error => {
             console.error(error)
-            res.send({
-                msg: "微服务故障",
-                code: 1,
-            })
+            next(error)
         })
 
     }
@@ -345,7 +313,7 @@ router.post("/search/condition", (req, res) => {
 
 // 获取跳转过来详情页的书本详情
 let detail
-router.post("/book/detail", (req, res) => {
+router.post("/book/detail", (req, res, next) => {
     // 先查出基本信息,再查出章节信息
     mysql.select(`SELECT dp_book.id,dp_book.is_end,dp_book.book_name,dp_book.cover_link,dp_book.description,dp_cate.cate_name,dp_author.author_name FROM dp_book JOIN dp_cate INNER JOIN dp_author ON dp_book.author_id=dp_author.id AND dp_book.cate_id=dp_cate.id WHERE dp_book.id='${req.body.id}' `).then(results => {
         detail = results[0]
@@ -366,10 +334,7 @@ router.post("/book/detail", (req, res) => {
         })
     }).catch(error => {
         console.error(error)
-        res.send({
-            msg: "微服务故障",
-            code: 1,
-        })
+        next(error)
 
 
     })
@@ -377,7 +342,7 @@ router.post("/book/detail", (req, res) => {
 // 阅读.获取所有章节
 let px = ""
 let chapter_list = []
-router.post("/book/catelog", (req, res) => {
+router.post("/book/catelog", (req, res, next) => {
     console.log(req.body);
 
     if (req.body.ascending == "true") {
@@ -408,15 +373,12 @@ router.post("/book/catelog", (req, res) => {
 
         .catch(error => {
             console.error(error)
-            res.send({
-                code: 1,
-                msg: "微服务故障"
-            })
+            next(error)
         })
 
 })
 // 获取跳转过来的阅读详情
-router.post('/book', (req, res) => {
+router.post('/book', (req, res, next) => {
 
 
 
@@ -431,17 +393,14 @@ router.post('/book', (req, res) => {
         })
     }).catch(error => {
         console.error(error)
-        res.send({
-            msg: "微服务故障",
-            code: 1,
-        })
+        next(error)
 
 
 
     })
 })
 // 获取搜索的信息 模糊查询
-router.post('/get/associate', (req, res) => {
+router.post('/get/associate', (req, res, next) => {
     let sql = ""
     if (req.body.title == "") {
         sql = `SELECT book_name FROM dp_book LIMIT 10`
@@ -462,16 +421,12 @@ router.post('/get/associate', (req, res) => {
         })
     }).catch(error => {
         console.error(error)
-        res.send({
-            msg: "微服务故障",
-            code: 1,
-        })
+        next(error)
     })
 
 })
-
 // 获取搜索的信息
-router.post('/search', (req, res) => {
+router.post('/search', (req, res, next) => {
     let current_page = 1
     if (req.body.page) {
         current_page = parseInt(req.body.page);
@@ -509,12 +464,16 @@ router.post('/search', (req, res) => {
     })
         .catch(error => {
             console.error(error)
-            res.send({
-                msg: "微服务故障",
-                code: 1,
-            })
+            next(error)
         })
 
+})
+// 统一处理错误的中间件
+router.use("/", (err, req, res, next) => {
+    res.send({
+        msg: "微服务故障",
+        code: 1,
+    })
 })
 
 
