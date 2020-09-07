@@ -1,0 +1,14 @@
+@uri=http://localhost:5000/
+
+post {{uri}}banner
+
+###
+
+# post {{uri}}search
+# Content-Type:application/x-www-form-urlencoded
+
+# {
+#     "title":"",
+#     "page":"1",
+#     "limit":"15",
+# }
