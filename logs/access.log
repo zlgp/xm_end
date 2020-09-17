@@ -20,3 +20,17 @@ production
   database: 'novel'
 }
 5000 is running.....
+production
+{
+  host: '18.141.135.79',
+  user: 'cander',
+  password: 'xMQ@%^@xup6!qYjs',
+  database: 'novel'
+}
+{
+  host: '18.141.135.79',
+  user: 'cander',
+  password: 'xMQ@%^@xup6!qYjs',
+  database: 'novel'
+}
+5000 is running.....

@@ -379,9 +379,6 @@ router.post("/book/catelog", (req, res, next) => {
 })
 // 获取跳转过来的阅读详情
 router.post('/book', (req, res, next) => {
-
-
-
     mysql.select(`SELECT dp_chapter.id,dp_chapter.book_id,dp_chapter.chapter_title,dp_chapter.chapter_id,dp_chapter.chapter_content,dp_book.book_name FROM dp_chapter INNER JOIN dp_book WHERE dp_book.id=dp_chapter.book_id AND dp_chapter.book_id='${req.body.book_id}' AND dp_chapter.chapter_id='${req.body.chapter_id}'`).then(results => {
         console.log(results[0], 'mysql');
 
