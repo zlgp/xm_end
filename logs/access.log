@@ -12,3 +12,11 @@ production
 5000 is running.....
 Fri Sep 04 2020 15:02:16 GMT+0800 (GMT+08:00)--POST--/get/channel--PostmanRuntime/7.15.0--1599202936294
 Fri Sep 04 2020 15:02:21 GMT+0800 (GMT+08:00)--POST--/get/channel--PostmanRuntime/7.15.0--1599202941980
+production
+{
+  host: '18.141.135.79',
+  user: 'cander',
+  password: 'xMQ@%^@xup6!qYjs',
+  database: 'novel'
+}
+5000 is running.....

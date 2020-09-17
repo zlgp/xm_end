@@ -10,9 +10,9 @@ let REDIS_COFN
 if (env == "dev") {
     //mysql数据库配置
     MYSQL_COFN = {
-        host: 'localhost',
-        user: 'root',
-        password: 'root',
+        host: '18.141.135.79',
+        user: 'cander',
+        password: 'xMQ@%^@xup6!qYjs',
         database: 'novel'
     },
         REDIS_COFN = {
@@ -35,6 +35,8 @@ if (env == "production") {
             host: "127.0.0.1"
         }
 }
+console.log(MYSQL_COFN);
+
 
 module.exports = {
     MYSQL_COFN,
