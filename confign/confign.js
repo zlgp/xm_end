@@ -17,7 +17,8 @@ if (env == "dev") {
     },
         REDIS_COFN = {
             port: 6379,
-            host: "127.0.0.1"
+            host: "18.141.135.79",
+            password:"AP$jkK9k@sgHEdsa"
         }
 }
 
@@ -32,7 +33,8 @@ if (env == "production") {
     },
         REDIS_COFN = {
             port: 6379,
-            host: "18.141.135.79"
+            host: "18.141.135.79",
+            password:"AP$jkK9k@sgHEdsa"
         }
 }
 console.log(MYSQL_COFN);
